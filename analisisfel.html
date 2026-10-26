@@ -103,7 +103,7 @@
             <div class="bg-navy-800/60 backdrop-blur rounded-2xl p-5 border border-navy-700/85 shadow-xl relative overflow-hidden">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-navy-400">Productos Analizados</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-navy-400">Productos Diferenciados</p>
                         <h3 id="kpi-total-productos" class="text-2xl font-black text-white mt-1">0</h3>
                     </div>
                     <div class="w-12 h-12 rounded-xl bg-accent-cyan/10 text-accent-cyan flex items-center justify-center text-xl">
@@ -111,7 +111,7 @@
                     </div>
                 </div>
                 <div class="mt-3 flex items-center text-xs text-navy-400 gap-1">
-                    <i class="fa-solid fa-store text-accent-cyan"></i> Comparados entre comercios
+                    <i class="fa-solid fa-code-branch text-accent-cyan"></i> Separa distinto precio / suma igual precio
                 </div>
             </div>
 
@@ -127,7 +127,7 @@
                     </div>
                 </div>
                 <div class="mt-3 flex items-center text-xs text-rose-400 gap-1 font-medium">
-                    Subieron respecto a compra anterior
+                    Subieron respecto a mes anterior
                 </div>
             </div>
 
@@ -143,7 +143,7 @@
                     </div>
                 </div>
                 <div class="mt-3 flex items-center text-xs text-emerald-400 gap-1 font-medium">
-                    Disminuyeron de valor o en oferta
+                    Disminuyeron respecto a mes anterior
                 </div>
             </div>
         </div>
@@ -198,7 +198,7 @@
                             </div>
                         </div>
                         <p class="text-[11px] text-navy-400 leading-relaxed">
-                            * Aunque la factura tenga fecha de emisión de finales del mes anterior (ej. 25 de octubre), quedará asignada al presupuesto del mes que elijas arriba.
+                            * Si un producto viene repetido con el <b>mismo precio</b> (ej. Magia Blanca Cloro), suma la cantidad. Si tiene <b>misma descripción pero distinto precio</b> (ej. Comida Gato), lo separa como producto diferente.
                         </p>
                     </div>
 
@@ -223,7 +223,7 @@
                 </div>
 
                 <div class="mt-4 pt-3 border-t border-navy-700/80 flex items-center justify-between text-xs text-navy-400">
-                    <span><i class="fa-solid fa-check-double text-emerald-400 mr-1"></i> Lector calibrado para FEL Guatemala</span>
+                    <span><i class="fa-solid fa-check-double text-emerald-400 mr-1"></i> Detector de variantes por precio activo</span>
                     <span id="periodo-activo-badge" class="px-2.5 py-1 rounded-lg bg-navy-900 text-accent-blue font-semibold border border-navy-700">Noviembre 2026</span>
                 </div>
             </div>
@@ -231,7 +231,7 @@
             <!-- Panel Derecho (7 cols): Tarjetas de Resumen Mensual + Gráfico -->
             <div class="bg-navy-800/80 backdrop-blur rounded-2xl p-6 border border-navy-700 shadow-xl lg:col-span-7 flex flex-col justify-between space-y-6">
                 
-                <!-- Historial de Meses Cargados (Tarjetas de Mes/Año con Cantidad de Facturas y Total Gastado) -->
+                <!-- Historial de Meses Cargados -->
                 <div>
                     <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center gap-2.5">
@@ -250,7 +250,7 @@
 
                     <!-- Contenedor de tarjetas de meses -->
                     <div id="contenedor-resumen-meses" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-44 overflow-y-auto pr-1">
-                        <!-- Se llena dinámicamente con cada Mes/Año, cantidad de facturas y total gastado -->
+                        <!-- Se llena dinámicamente -->
                     </div>
                 </div>
 
@@ -275,20 +275,19 @@
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
                         <i class="fa-solid fa-magnifying-glass-dollar text-accent-cyan"></i> Matriz Histórica de Productos (Detección de Alzas y Bajas)
                     </h2>
-                    <p class="text-xs text-navy-400">Compara automáticamente el precio neto pagado de cada producto a través de los meses para optimizar dónde comprar.</p>
+                    <p class="text-xs text-navy-400">Productos con misma descripción pero diferente precio se listan por separado manteniendo su descripción original.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
                     <select id="filtro-tendencia" onchange="filtrarProductos()" class="bg-navy-900 border border-navy-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-accent-indigo">
                         <option value="TODOS">Todos los productos</option>
                         <option value="ALZA">Solo productos al Alza 📈</option>
                         <option value="BAJA">Solo productos a la Baja 📉</option>
-                        <option value="IGUAL">Sin variación / Nuevos</option>
+                        <option value="BASE">Precio Base / Sin variación</option>
                     </select>
                     <div class="relative flex-grow sm:w-56">
                         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-navy-400 text-xs"></i>
                         <input type="text" id="busqueda" onkeyup="filtrarProductos()" placeholder="Buscar producto o comercio..." class="w-full bg-navy-900 border border-navy-700 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-accent-indigo">
                     </div>
-                    <!-- Botón directo para descargar reporte XLSX de la Matriz -->
                     <button onclick="exportarMatrizExcel()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-navy-950 font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-emerald-500/20">
                         <i class="fa-solid fa-file-excel text-sm"></i> Descargar Matriz (.xlsx)
                     </button>
@@ -301,10 +300,10 @@
                         <tr class="bg-navy-950/70 text-navy-400 uppercase text-[10px] tracking-wider border-b border-navy-700">
                             <th class="py-3.5 px-6">Descripción del Producto (FEL)</th>
                             <th class="py-3.5 px-4">Último Comercio / Mes</th>
-                            <th class="py-3.5 px-4">Cant.</th>
+                            <th class="py-3.5 px-4">Cant. Mes</th>
                             <th class="py-3.5 px-4">P. Unitario / Neto (Q)</th>
-                            <th class="py-3.5 px-4">Precio Anterior (Q)</th>
-                            <th class="py-3.5 px-4">Variación</th>
+                            <th class="py-3.5 px-4">Precio Mes Anterior (Q)</th>
+                            <th class="py-3.5 px-4">Tendencia / Estatus</th>
                             <th class="py-3.5 px-6 text-right">Diagnóstico de Compra</th>
                         </tr>
                     </thead>
@@ -333,7 +332,7 @@
                             <th class="py-3.5 px-4">Fecha Emisión FEL</th>
                             <th class="py-3.5 px-4">Establecimiento</th>
                             <th class="py-3.5 px-4">No. Autorización / DTE</th>
-                            <th class="py-3.5 px-4">Productos</th>
+                            <th class="py-3.5 px-4">Líneas</th>
                             <th class="py-3.5 px-4">Descuento (Q)</th>
                             <th class="py-3.5 px-4">Total Factura (Q)</th>
                             <th class="py-3.5 px-6 text-right">Acciones</th>
@@ -386,7 +385,7 @@
         <p>Análisis FEL 360° — Control Mensual de Compras y Auditoría de Precios | Guatemala</p>
     </footer>
 
-    <!-- Lógica Completa de Extracción FEL, Análisis Mensual y Exportación Excel -->
+    <!-- Lógica Completa de Extracción FEL, Separación por Precio y Exportación Excel -->
     <script>
         const NOMBRES_MESES = {
             "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril",
@@ -394,12 +393,13 @@
             "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
         };
 
-        let facturas = JSON.parse(localStorage.getItem('fel_facturas_historico_v2')) || [];
+        // Llave v4 para aplicar limpiamente la separación de productos con misma descripción y diferente precio
+        let facturas = JSON.parse(localStorage.getItem('fel_facturas_historico_v4')) || [];
         let filtroPeriodoActivo = 'TODOS';
         let chartInstance = null;
 
         function guardarStorage() {
-            localStorage.setItem('fel_facturas_historico_v2', JSON.stringify(facturas));
+            localStorage.setItem('fel_facturas_historico_v4', JSON.stringify(facturas));
         }
 
         function obtenerPeriodoSeleccionado() {
@@ -450,15 +450,15 @@
                 return;
             }
 
-            // 1. Preparar filas para la Hoja 1: Matriz Comparativa de Precios
             const datosMatriz = productos.map((item, idx) => {
-                const diff = item.precioActual - item.precioAnterior;
-                const pct = item.precioAnterior > 0 ? (diff / item.precioAnterior) * 100 : 0;
+                const esPrimeraCompra = item.historialPeriodos.length === 1;
+                const diff = esPrimeraCompra ? 0 : (item.precioActual - item.precioAnterior);
+                const pct = (!esPrimeraCompra && item.precioAnterior > 0) ? (diff / item.precioAnterior) * 100 : 0;
 
                 let estatus = "Precio Base (1ra compra)";
-                let recomendacion = "Registrado para comparar el próximo mes";
+                let recomendacion = "Registrado como base para comparar el próximo mes";
 
-                if (item.historialPrecios.length > 1) {
+                if (!esPrimeraCompra) {
                     if (pct > 0.1) {
                         estatus = "ALZA";
                         recomendacion = "Subió de precio - Cotizar en otro establecimiento";
@@ -467,27 +467,26 @@
                         recomendacion = "Bajó de precio - Excelente ahorro";
                     } else {
                         estatus = "SIN CAMBIOS";
-                        recomendacion = "Precio estable - Mantener establecimiento";
+                        recomendacion = "Mismo precio que el mes anterior";
                     }
                 }
 
                 return {
                     "No.": idx + 1,
-                    "Descripción del Producto (FEL)": item.nombre,
+                    "Descripción del Producto (FEL)": item.nombreMostrar, // Mantiene exactamente la misma descripción original
+                    "Diferenciador": item.esVariante ? `Producto distinto #${item.indiceVariante} (Diferente precio)` : "Estándar",
                     "Último Establecimiento": item.comercioActual,
                     "Período Última Compra": item.periodoActual,
-                    "Última Cantidad": item.cantUltima,
+                    "Cantidad Total (Mes)": Number(item.cantUltima.toFixed(2)),
                     "Precio Unitario / Neto Actual (Q)": Number(item.precioActual.toFixed(2)),
                     "Precio Anterior (Q)": Number(item.precioAnterior.toFixed(2)),
                     "Diferencia (Q)": Number(diff.toFixed(2)),
                     "Variación (%)": Number(pct.toFixed(2)),
                     "Tendencia": estatus,
-                    "Diagnóstico / Acción Recomendada": recomendacion,
-                    "Compras Registradas": item.historialPrecios.length
+                    "Diagnóstico / Acción Recomendada": recomendacion
                 };
             });
 
-            // 2. Preparar filas para la Hoja 2: Resumen Mensual de Presupuesto y Facturas
             const resumenMeses = obtenerResumenPorMeses();
             const datosMeses = resumenMeses.map(m => ({
                 "Período de Compra": m.etiqueta,
@@ -496,62 +495,35 @@
                 "Total Gastado en el Mes (Q)": Number(m.totalGastado.toFixed(2))
             }));
 
-            // 3. Preparar filas para la Hoja 3: Desglose de Facturas FEL
             const datosFacturas = facturas.map(f => ({
                 "Período Asignado": f.periodoCorto,
                 "Fecha Emisión FEL": f.fechaEmision,
                 "Establecimiento": f.comercio,
                 "No. Autorización / DTE": f.id,
-                "Cantidad de Ítems": f.productos.length,
+                "Cantidad de Renglones": f.productos.length,
                 "Descuento Total (Q)": Number((f.descuentoTotal || 0).toFixed(2)),
                 "Total Factura (Q)": Number(f.total.toFixed(2))
             }));
 
-            // Crear libro de Excel
             const wb = XLSX.utils.book_new();
 
-            // Hoja 1: Matriz Comparativa
             const wsMatriz = XLSX.utils.json_to_sheet(datosMatriz);
             wsMatriz['!cols'] = [
-                { wch: 6 },  // No.
-                { wch: 32 }, // Descripción
-                { wch: 28 }, // Establecimiento
-                { wch: 18 }, // Período
-                { wch: 14 }, // Cantidad
-                { wch: 26 }, // Precio Actual
-                { wch: 20 }, // Precio Anterior
-                { wch: 15 }, // Diferencia
-                { wch: 15 }, // Variación %
-                { wch: 18 }, // Tendencia
-                { wch: 44 }, // Diagnóstico
-                { wch: 18 }  // Compras Registradas
+                { wch: 6 },  { wch: 32 }, { wch: 34 }, { wch: 28 },
+                { wch: 18 }, { wch: 18 }, { wch: 26 }, { wch: 20 },
+                { wch: 15 }, { wch: 15 }, { wch: 24 }, { wch: 46 }
             ];
             XLSX.utils.book_append_sheet(wb, wsMatriz, "Matriz Comparativa");
 
-            // Hoja 2: Resumen por Mes
             if (datosMeses.length > 0) {
                 const wsMeses = XLSX.utils.json_to_sheet(datosMeses);
-                wsMeses['!cols'] = [
-                    { wch: 30 },
-                    { wch: 18 },
-                    { wch: 28 },
-                    { wch: 26 }
-                ];
+                wsMeses['!cols'] = [{ wch: 30 }, { wch: 18 }, { wch: 28 }, { wch: 26 }];
                 XLSX.utils.book_append_sheet(wb, wsMeses, "Resumen Mensual");
             }
 
-            // Hoja 3: Facturas Cargadas
             if (datosFacturas.length > 0) {
                 const wsFacturas = XLSX.utils.json_to_sheet(datosFacturas);
-                wsFacturas['!cols'] = [
-                    { wch: 18 },
-                    { wch: 18 },
-                    { wch: 28 },
-                    { wch: 38 },
-                    { wch: 16 },
-                    { wch: 20 },
-                    { wch: 20 }
-                ];
+                wsFacturas['!cols'] = [{ wch: 18 }, { wch: 18 }, { wch: 28 }, { wch: 38 }, { wch: 18 }, { wch: 20 }, { wch: 20 }];
                 XLSX.utils.book_append_sheet(wb, wsFacturas, "Facturas FEL");
             }
 
@@ -560,7 +532,7 @@
         }
 
         // =========================================================================
-        // PARSER INTELIGENTE CALIBRADO PARA EL ESTÁNDAR FEL DE GUATEMALA (PDF.js)
+        // PARSER INTELIGENTE CALIBRADO PARA EL ESTÁNDAR FEL DE GUATEMALA
         // =========================================================================
         async function procesarMultiplesPDFs(event) {
             const files = event.target.files;
@@ -634,7 +606,6 @@
         function analizarEstructuraFEL(textoCompleto, lineas, fileName, periodoObj) {
             const upper = textoCompleto.toUpperCase();
 
-            // 1. Detectar Establecimiento / Comercio Emisor
             let comercio = "ESTABLECIMIENTO FEL";
             if (upper.includes("SUPERMERCADOS LA TORRE") || upper.includes("UNISUPER")) {
                 comercio = "SUPERMERCADOS LA TORRE";
@@ -651,7 +622,6 @@
                 if (lineaSA) comercio = lineaSA.substring(0, 35).toUpperCase();
             }
 
-            // 2. Detectar UUID de Autorización o Número de DTE
             let idDTE = fileName.replace(/\.pdf$/i, '');
             const matchUUID = textoCompleto.match(/([A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12})/i);
             if (matchUUID) {
@@ -661,7 +631,6 @@
                 if (matchDTE) idDTE = "DTE-" + matchDTE[1];
             }
 
-            // 3. Detectar Fecha de Emisión real del documento
             let fechaEmision = "25-oct-2026";
             const matchFecha = textoCompleto.match(/(\d{2}-[a-zA-Z]{3}-\d{4})/);
             if (matchFecha) {
@@ -671,7 +640,6 @@
                 if (matchFechaNum) fechaEmision = matchFechaNum[1];
             }
 
-            // 4. Extraer todos los productos de la tabla FEL
             let productos = [];
 
             lineas.forEach(linea => {
@@ -725,7 +693,6 @@
                 productos = extraerMultilineaFEL(textoCompleto);
             }
 
-            // 5. Detectar el Total General de la Factura
             let totalFactura = 0;
             let descuentoTotal = 0;
 
@@ -791,7 +758,9 @@
         }
 
         // =========================================================================
-        // MOTOR DE CONSOLIDACIÓN MENSUAL Y COMPARATIVA DE PRECIOS
+        // MOTOR PRINCIPAL:
+        // - Misma descripción + Mismo precio en factura -> Suma cantidad (ej. Magia Blanca Cloro = 2)
+        // - Misma descripción + Distinto precio en factura -> Producto diferente con misma descripción (ej. Comida Gato Q134.95 y Comida Gato Q339.95)
         // =========================================================================
         function obtenerResumenPorMeses() {
             let mapaMeses = {};
@@ -816,32 +785,91 @@
             const facturasOrdenadas = [...facturas].sort((a, b) => a.periodoCodigo.localeCompare(b.periodoCodigo));
 
             facturasOrdenadas.forEach(f => {
-                f.productos.forEach(p => {
-                    const clave = p.nombre.trim().toUpperCase();
-                    const precioEvaluar = p.precioNetoUnitario || p.pUnitario;
+                // 1. Primero agrupamos por (Nombre + Precio Exacto) dentro de la misma factura.
+                // Así, si hay 2 MAGIA B CLORO 6PK de Q8.90, se unen en 1 solo ítem con Cant = 2.
+                // Y si hay 2 COMIDA GATO pero uno cuesta Q134.95 y otro Q339.95, quedan separados.
+                let gruposPorNombreYPrecio = {};
 
-                    if (!mapaProductos[clave]) {
-                        mapaProductos[clave] = {
-                            nombre: clave,
-                            comercioActual: f.comercio,
-                            periodoActual: f.periodoCorto,
-                            cantUltima: p.cant,
-                            precioAnterior: precioEvaluar,
-                            precioActual: precioEvaluar,
-                            historialPrecios: [{ periodo: f.periodoCorto, comercio: f.comercio, precio: precioEvaluar }]
+                f.productos.forEach(p => {
+                    const nombreLimpio = p.nombre.trim().toUpperCase();
+                    const precio = +(p.precioNetoUnitario || p.pUnitario).toFixed(2);
+                    const claveFactura = `${nombreLimpio}__${precio.toFixed(2)}`;
+
+                    if (!gruposPorNombreYPrecio[claveFactura]) {
+                        gruposPorNombreYPrecio[claveFactura] = {
+                            nombreBase: nombreLimpio,
+                            precioUnitario: precio,
+                            cantTotal: p.cant
                         };
                     } else {
-                        mapaProductos[clave].precioAnterior = mapaProductos[clave].precioActual;
-                        mapaProductos[clave].precioActual = precioEvaluar;
-                        mapaProductos[clave].comercioActual = f.comercio;
-                        mapaProductos[clave].periodoActual = f.periodoCorto;
-                        mapaProductos[clave].cantUltima = p.cant;
-                        mapaProductos[clave].historialPrecios.push({
-                            periodo: f.periodoCorto,
-                            comercio: f.comercio,
-                            precio: precioEvaluar
-                        });
+                        gruposPorNombreYPrecio[claveFactura].cantTotal += p.cant;
                     }
+                });
+
+                // 2. Agrupar por nombreBase para saber cuántos precios diferentes existen para la misma descripción en esta factura
+                let variantesPorNombre = {};
+                Object.values(gruposPorNombreYPrecio).forEach(item => {
+                    if (!variantesPorNombre[item.nombreBase]) {
+                        variantesPorNombre[item.nombreBase] = [];
+                    }
+                    variantesPorNombre[item.nombreBase].push(item);
+                });
+
+                // 3. Ordenar cada grupo por precio de menor a mayor (para que el mes siguiente la variante #1 barata se compare con la #1 barata y la #2 cara con la #2 cara)
+                Object.keys(variantesPorNombre).forEach(nombreBase => {
+                    const listaVariantes = variantesPorNombre[nombreBase].sort((a, b) => a.precioUnitario - b.precioUnitario);
+                    const tieneVariantesDistintas = listaVariantes.length > 1;
+
+                    listaVariantes.forEach((itemFac, index) => {
+                        const numVariante = index + 1;
+                        // Clave interna única para no mezclar el paté (caro) con las croquetas (económicas),
+                        // pero guardando `nombreMostrar: nombreBase` para que la descripción siga siendo la misma ("COMIDA GATO")
+                        const claveHistorica = tieneVariantesDistintas
+                            ? `${nombreBase}__VAR_${numVariante}`
+                            : nombreBase;
+
+                        if (!mapaProductos[claveHistorica]) {
+                            mapaProductos[claveHistorica] = {
+                                claveInterna: claveHistorica,
+                                nombreMostrar: nombreBase,
+                                esVariante: tieneVariantesDistintas,
+                                indiceVariante: numVariante,
+                                comercioActual: f.comercio,
+                                periodoActual: f.periodoCorto,
+                                periodoCodigoActual: f.periodoCodigo,
+                                cantUltima: itemFac.cantTotal,
+                                precioAnterior: itemFac.precioUnitario,
+                                precioActual: itemFac.precioUnitario,
+                                historialPeriodos: [{
+                                    periodoCodigo: f.periodoCodigo,
+                                    periodo: f.periodoCorto,
+                                    comercio: f.comercio,
+                                    precio: itemFac.precioUnitario
+                                }]
+                            };
+                        } else {
+                            const ultimoReg = mapaProductos[claveHistorica].historialPeriodos[mapaProductos[claveHistorica].historialPeriodos.length - 1];
+
+                            if (ultimoReg.periodoCodigo === f.periodoCodigo && ultimoReg.comercio === f.comercio) {
+                                // Mismo mes y mismo comercio: sumamos cantidad
+                                mapaProductos[claveHistorica].cantUltima += itemFac.cantTotal;
+                            } else {
+                                // Diferente mes o diferente establecimiento: comparamos alza o baja
+                                mapaProductos[claveHistorica].precioAnterior = mapaProductos[claveHistorica].precioActual;
+                                mapaProductos[claveHistorica].precioActual = itemFac.precioUnitario;
+                                mapaProductos[claveHistorica].comercioActual = f.comercio;
+                                mapaProductos[claveHistorica].periodoActual = f.periodoCorto;
+                                mapaProductos[claveHistorica].periodoCodigoActual = f.periodoCodigo;
+                                mapaProductos[claveHistorica].cantUltima = itemFac.cantTotal;
+                                mapaProductos[claveHistorica].historialPeriodos.push({
+                                    periodoCodigo: f.periodoCodigo,
+                                    periodo: f.periodoCorto,
+                                    comercio: f.comercio,
+                                    precio: itemFac.precioUnitario
+                                });
+                            }
+                        }
+                    });
                 });
             });
 
@@ -874,10 +902,12 @@
             let bajas = 0;
 
             productosConsolidados.forEach(item => {
-                const diff = item.precioActual - item.precioAnterior;
-                const pct = item.precioAnterior > 0 ? (diff / item.precioAnterior) * 100 : 0;
-                if (pct > 0.1) alzas++;
-                else if (pct < -0.1) bajas++;
+                if (item.historialPeriodos.length > 1) {
+                    const diff = item.precioActual - item.precioAnterior;
+                    const pct = item.precioAnterior > 0 ? (diff / item.precioAnterior) * 100 : 0;
+                    if (pct > 0.1) alzas++;
+                    else if (pct < -0.1) bajas++;
+                }
             });
 
             document.getElementById('kpi-total-alza').innerText = alzas;
@@ -937,13 +967,14 @@
             const productos = procesarConsolidadoProductos();
 
             return productos.filter(p => {
-                const coincideTexto = p.nombre.toLowerCase().includes(query) || p.comercioActual.toLowerCase().includes(query);
-                const diff = p.precioActual - p.precioAnterior;
-                const pct = p.precioAnterior > 0 ? (diff / p.precioAnterior) * 100 : 0;
+                const coincideTexto = p.nombreMostrar.toLowerCase().includes(query) || p.comercioActual.toLowerCase().includes(query);
+                const esPrimeraCompra = p.historialPeriodos.length === 1;
+                const diff = esPrimeraCompra ? 0 : (p.precioActual - p.precioAnterior);
+                const pct = (!esPrimeraCompra && p.precioAnterior > 0) ? (diff / p.precioAnterior) * 100 : 0;
 
-                if (tendencia === 'ALZA') return coincideTexto && pct > 0.1;
-                if (tendencia === 'BAJA') return coincideTexto && pct < -0.1;
-                if (tendencia === 'IGUAL') return coincideTexto && Math.abs(pct) <= 0.1;
+                if (tendencia === 'ALZA') return coincideTexto && !esPrimeraCompra && pct > 0.1;
+                if (tendencia === 'BAJA') return coincideTexto && !esPrimeraCompra && pct < -0.1;
+                if (tendencia === 'BASE') return coincideTexto && (esPrimeraCompra || Math.abs(pct) <= 0.1);
                 return coincideTexto;
             });
         }
@@ -963,40 +994,51 @@
             }
 
             productos.forEach(item => {
-                const diff = item.precioActual - item.precioAnterior;
-                const pct = item.precioAnterior > 0 ? (diff / item.precioAnterior) * 100 : 0;
+                const esPrimeraCompra = item.historialPeriodos.length === 1;
+                const diff = esPrimeraCompra ? 0 : (item.precioActual - item.precioAnterior);
+                const pct = (!esPrimeraCompra && item.precioAnterior > 0) ? (diff / item.precioAnterior) * 100 : 0;
 
                 let badgeClass = "bg-slate-700/40 text-slate-300 border-slate-600";
-                let badgeText = "Precio Base (1ra vez)";
-                let icono = "fa-minus";
-                let diagnostico = `<span class="text-slate-400">Registrado para próximo mes</span>`;
+                let badgeText = "Precio Base (1ra compra)";
+                let icono = "fa-bookmark";
+                let diagnostico = `<span class="text-slate-400">Registrado para comparar el próximo mes</span>`;
 
-                if (item.historialPrecios.length > 1) {
+                if (!esPrimeraCompra) {
                     if (pct > 0.1) {
                         badgeClass = "bg-rose-500/15 text-rose-400 border-rose-500/30";
                         badgeText = `+Q${diff.toFixed(2)} (+${pct.toFixed(1)}%)`;
                         icono = "fa-arrow-trend-up";
-                        diagnostico = `<span class="text-rose-400 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Subió — Buscar otro comercio</span>`;
+                        diagnostico = `<span class="text-rose-400 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Subió — Cotizar en otro comercio</span>`;
                     } else if (pct < -0.1) {
                         badgeClass = "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
                         badgeText = `-Q${Math.abs(diff).toFixed(2)} (${pct.toFixed(1)}%)`;
                         icono = "fa-arrow-trend-down";
-                        diagnostico = `<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>Bajó — Excelente precio</span>`;
+                        diagnostico = `<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>Bajó — Excelente ahorro</span>`;
                     } else {
-                        badgeText = "0.0% (Mismo precio)";
-                        diagnostico = `<span class="text-accent-blue">Precio estable</span>`;
+                        badgeClass = "bg-accent-blue/10 text-accent-blue border-accent-blue/30";
+                        badgeText = "0.0% (Sin Cambios)";
+                        icono = "fa-equals";
+                        diagnostico = `<span class="text-accent-blue">Precio estable respecto al mes anterior</span>`;
                     }
                 }
+
+                // Si son dos productos distintos con la misma descripción (ej. Comida Gato Q134.95 y Q339.95),
+                // mostramos la misma descripción exacta acompañada de una pequeña etiqueta discreta que indica que se separó por precio diferente
+                const etiquetaVariante = item.esVariante
+                    ? `<span class="ml-2 text-[10px] px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30 font-medium" title="Misma descripción en factura pero diferente precio unitario">Producto distinto #${item.indiceVariante}</span>`
+                    : '';
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-navy-700/30 transition";
                 tr.innerHTML = `
-                    <td class="py-3 px-6 font-semibold text-white text-xs">${item.nombre}</td>
+                    <td class="py-3 px-6 font-semibold text-white text-xs">
+                        ${item.nombreMostrar} ${etiquetaVariante}
+                    </td>
                     <td class="py-3 px-4 text-xs">
                         <span class="text-slate-200 font-medium block">${item.comercioActual}</span>
                         <span class="text-[10px] text-navy-400">${item.periodoActual}</span>
                     </td>
-                    <td class="py-3 px-4 text-xs text-slate-300">${item.cantUltima}</td>
+                    <td class="py-3 px-4 text-xs font-semibold text-accent-cyan">${Number(item.cantUltima.toFixed(2))}</td>
                     <td class="py-3 px-4 text-xs font-bold text-white">Q ${item.precioActual.toFixed(2)}</td>
                     <td class="py-3 px-4 text-xs text-navy-400">Q ${item.precioAnterior.toFixed(2)}</td>
                     <td class="py-3 px-4 text-xs font-semibold">
@@ -1036,7 +1078,7 @@
                     <td class="py-3.5 px-4 text-xs text-slate-300">${f.fechaEmision}</td>
                     <td class="py-3.5 px-4 text-xs font-bold text-white">${f.comercio}</td>
                     <td class="py-3.5 px-4 text-xs text-navy-300 font-mono">${f.id.substring(0, 18)}...</td>
-                    <td class="py-3.5 px-4 text-xs text-accent-cyan font-semibold">${f.productos.length} productos</td>
+                    <td class="py-3.5 px-4 text-xs text-accent-cyan font-semibold">${f.productos.length} renglones</td>
                     <td class="py-3.5 px-4 text-xs text-amber-400">Q ${(f.descuentoTotal || 0).toFixed(2)}</td>
                     <td class="py-3.5 px-4 text-sm font-black text-emerald-400">Q ${f.total.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td class="py-3.5 px-6 text-right space-x-1">
@@ -1075,7 +1117,7 @@
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('modal-resumen-items').innerText = `Total de líneas extraídas: ${factura.productos.length} ítems | Descuento Total: Q ${(factura.descuentoTotal || 0).toFixed(2)}`;
+            document.getElementById('modal-resumen-items').innerText = `Total de líneas extraídas: ${factura.productos.length} renglones | Descuento Total: Q ${(factura.descuentoTotal || 0).toFixed(2)}`;
             document.getElementById('modal-total-factura').innerText = `TOTAL FACTURA: Q ${factura.total.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
             const modal = document.getElementById('modal-detalle');
@@ -1093,7 +1135,7 @@
             const ctx = document.getElementById('precioChart').getContext('2d');
             
             const topProductos = productos.slice(0, 8);
-            const labels = topProductos.map(p => p.nombre.length > 16 ? p.nombre.substring(0, 16) + '...' : p.nombre);
+            const labels = topProductos.map(p => p.nombreMostrar.length > 16 ? p.nombreMostrar.substring(0, 16) + '...' : p.nombreMostrar);
             const preciosAnteriores = topProductos.map(p => p.precioAnterior);
             const preciosActuales = topProductos.map(p => p.precioActual);
 
@@ -1107,7 +1149,7 @@
                     labels: labels.length > 0 ? labels : ['Sube tus PDFs para graficar'],
                     datasets: [
                         {
-                            label: 'Precio Anterior (Q)',
+                            label: 'Precio Base / Anterior (Q)',
                             data: preciosAnteriores.length > 0 ? preciosAnteriores : [0],
                             backgroundColor: 'rgba(58, 80, 107, 0.7)',
                             borderColor: '#3A506B',
