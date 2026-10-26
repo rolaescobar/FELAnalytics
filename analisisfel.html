@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis FEL - Control Mensual e Histórico de Precios</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            950: '#060B19',
+                            900: '#0B132B',
+                            800: '#1C2541',
+                            700: '#3A506B',
+                            600: '#475569',
+                            500: '#64748B',
+                            400: '#94A3B8',
+                        },
+                        accent: {
+                            cyan: '#00F5D4',
+                            blue: '#4CC9F0',
+                            indigo: '#4361EE',
+                            emerald: '#10B981',
+                            rose: '#F43F5E',
+                            amber: '#F59E0B'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js para gráficos analíticos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (XLSX) para exportar reportes a Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- PDF.js para procesar archivos PDF de facturas FEL -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+</head>
+<body class="bg-navy-900 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-accent-indigo selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-navy-800/90 backdrop-blur border-b border-navy-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-accent-indigo to-accent-blue flex items-center justify-center shadow-lg shadow-accent-indigo/30">
+                    <i class="fa-solid fa-file-invoice-dollar text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        Análisis FEL <span class="text-xs px-2.5 py-0.5 rounded-full bg-accent-indigo/20 text-accent-blue border border-accent-indigo/30 font-semibold">Estándar SAT Guatemala</span>
+                    </h1>
+                    <p class="text-xs text-navy-400">Control mensual de presupuestos y detector histórico de alzas/bajas</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="px-4 py-2 rounded-xl bg-navy-700/50 hover:bg-navy-700 text-slate-300 hover:text-white text-sm font-medium transition flex items-center gap-2 border border-navy-600">
+                    <i class="fa-solid fa-arrow-left"></i> Volver al Inicio
+                </a>
+                <button onclick="exportarMatrizExcel()" class="px-4 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-sm font-semibold transition flex items-center gap-2 border border-emerald-500/30 shadow-lg shadow-emerald-500/5" title="Descargar reporte completo en Excel">
+                    <i class="fa-solid fa-file-excel"></i> Exportar Excel
+                </button>
+                <button onclick="resetData()" class="px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-sm font-medium transition flex items-center gap-2 border border-rose-500/20" title="Borrar todo el historial">
+                    <i class="fa-solid fa-trash-can"></i> Reiniciar Sistema
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- KPIs del Período Seleccionado / General -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <!-- Total Gastado en el Mes Seleccionado -->
+            <div class="bg-navy-800/70 backdrop-blur rounded-2xl p-5 border border-accent-indigo/40 shadow-xl relative overflow-hidden group">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-accent-indigo/10 rounded-full blur-xl"></div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p id="label-kpi-mes" class="text-xs font-semibold uppercase tracking-wider text-accent-blue">Gasto Mes Seleccionado</p>
+                        <h3 id="kpi-gasto-mes" class="text-2xl font-black text-white mt-1">Q 0.00</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-accent-indigo/20 text-accent-blue flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                </div>
+                <div class="mt-3 flex items-center justify-between text-xs text-slate-300 font-medium">
+                    <span><i class="fa-solid fa-file-pdf text-accent-cyan mr-1"></i> <b id="kpi-facturas-mes">0</b> facturas en este mes</span>
+                    <span id="kpi-acumulado-total" class="text-navy-400">Hist: Q 0.00</span>
+                </div>
+            </div>
+
+            <!-- Productos Únicos Detectados -->
+            <div class="bg-navy-800/60 backdrop-blur rounded-2xl p-5 border border-navy-700/85 shadow-xl relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-navy-400">Productos Analizados</p>
+                        <h3 id="kpi-total-productos" class="text-2xl font-black text-white mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-accent-cyan/10 text-accent-cyan flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-cart-flatbed"></i>
+                    </div>
+                </div>
+                <div class="mt-3 flex items-center text-xs text-navy-400 gap-1">
+                    <i class="fa-solid fa-store text-accent-cyan"></i> Comparados entre comercios
+                </div>
+            </div>
+
+            <!-- Productos al Alza -->
+            <div class="bg-navy-800/60 backdrop-blur rounded-2xl p-5 border border-navy-700/85 shadow-xl relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-navy-400">Productos al Alza 📈</p>
+                        <h3 id="kpi-total-alza" class="text-2xl font-black text-rose-400 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-arrow-trend-up"></i>
+                    </div>
+                </div>
+                <div class="mt-3 flex items-center text-xs text-rose-400 gap-1 font-medium">
+                    Subieron respecto a compra anterior
+                </div>
+            </div>
+
+            <!-- Productos a la Baja -->
+            <div class="bg-navy-800/60 backdrop-blur rounded-2xl p-5 border border-navy-700/85 shadow-xl relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-navy-400">Productos a la Baja 📉</p>
+                        <h3 id="kpi-total-baja" class="text-2xl font-black text-emerald-400 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-arrow-trend-down"></i>
+                    </div>
+                </div>
+                <div class="mt-3 flex items-center text-xs text-emerald-400 gap-1 font-medium">
+                    Disminuyeron de valor o en oferta
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección Principal: Selector de Mes + Subida Masiva + Resumen por Mes -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Panel Izquierdo (5 cols): Asignación de Mes/Año y Carga de PDFs -->
+            <div class="bg-navy-800/80 backdrop-blur rounded-2xl p-6 border border-navy-700 shadow-xl lg:col-span-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-3 mb-5">
+                        <div class="w-10 h-10 rounded-xl bg-accent-indigo/20 text-accent-blue flex items-center justify-center">
+                            <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Subida Masiva por Período</h2>
+                            <p class="text-xs text-navy-400">Selecciona el mes de presupuesto y sube tus PDFs FEL</p>
+                        </div>
+                    </div>
+
+                    <!-- Combo de Selección de Mes y Año de Compra -->
+                    <div class="bg-navy-900/90 p-4 rounded-xl border border-navy-700 mb-5 space-y-3">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-accent-blue">
+                            <i class="fa-regular fa-calendar-days mr-1"></i> 1. Selecciona el Período de estas Compras:
+                        </label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <span class="text-[11px] text-navy-400 block mb-1">Mes de Presupuesto</span>
+                                <select id="select-mes" onchange="actualizarVistaPorMes()" class="w-full bg-navy-800 border border-navy-600 rounded-xl px-3 py-2.5 text-sm font-semibold text-white focus:outline-none focus:border-accent-blue transition">
+                                    <option value="01">Compras para Enero</option>
+                                    <option value="02">Compras para Febrero</option>
+                                    <option value="03">Compras para Marzo</option>
+                                    <option value="04">Compras para Abril</option>
+                                    <option value="05">Compras para Mayo</option>
+                                    <option value="06">Compras para Junio</option>
+                                    <option value="07">Compras para Julio</option>
+                                    <option value="08">Compras para Agosto</option>
+                                    <option value="09">Compras para Septiembre</option>
+                                    <option value="10">Compras para Octubre</option>
+                                    <option value="11" selected>Compras para Noviembre</option>
+                                    <option value="12">Compras para Diciembre</option>
+                                </select>
+                            </div>
+                            <div>
+                                <span class="text-[11px] text-navy-400 block mb-1">Año</span>
+                                <select id="select-anio" onchange="actualizarVistaPorMes()" class="w-full bg-navy-800 border border-navy-600 rounded-xl px-3 py-2.5 text-sm font-semibold text-white focus:outline-none focus:border-accent-blue transition">
+                                    <option value="2025">2025</option>
+                                    <option value="2026" selected>2026</option>
+                                    <option value="2027">2027</option>
+                                    <option value="2028">2028</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-navy-400 leading-relaxed">
+                            * Aunque la factura tenga fecha de emisión de finales del mes anterior (ej. 25 de octubre), quedará asignada al presupuesto del mes que elijas arriba.
+                        </p>
+                    </div>
+
+                    <!-- Dropzone para subir N facturas -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2">
+                            <i class="fa-solid fa-file-pdf mr-1"></i> 2. Sube las Facturas PDF de este Mes:
+                        </label>
+                        <div class="border-2 border-dashed border-navy-600 hover:border-accent-blue rounded-2xl p-6 text-center cursor-pointer transition bg-navy-900/50 hover:bg-navy-900/80 group" onclick="document.getElementById('pdf-files-input').click()">
+                            <input type="file" id="pdf-files-input" accept=".pdf" multiple class="hidden" onchange="procesarMultiplesPDFs(event)">
+                            <div class="w-12 h-12 rounded-full bg-accent-indigo/15 text-accent-blue mx-auto flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                                <i class="fa-solid fa-file-circle-plus text-2xl"></i>
+                            </div>
+                            <p class="text-sm font-bold text-white mb-1">Seleccionar o arrastrar N facturas PDF</p>
+                            <p class="text-xs text-navy-400">Extrae automáticamente P. Unitario, Descuentos y TOTALES (Ej. Q531.98, Q1,868.25)</p>
+                            
+                            <div id="loading-indicator" class="hidden mt-4 p-2.5 rounded-xl bg-accent-indigo/20 border border-accent-indigo/40 text-xs text-accent-cyan font-semibold flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Analizando estructura tabular FEL...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-navy-700/80 flex items-center justify-between text-xs text-navy-400">
+                    <span><i class="fa-solid fa-check-double text-emerald-400 mr-1"></i> Lector calibrado para FEL Guatemala</span>
+                    <span id="periodo-activo-badge" class="px-2.5 py-1 rounded-lg bg-navy-900 text-accent-blue font-semibold border border-navy-700">Noviembre 2026</span>
+                </div>
+            </div>
+
+            <!-- Panel Derecho (7 cols): Tarjetas de Resumen Mensual + Gráfico -->
+            <div class="bg-navy-800/80 backdrop-blur rounded-2xl p-6 border border-navy-700 shadow-xl lg:col-span-7 flex flex-col justify-between space-y-6">
+                
+                <!-- Historial de Meses Cargados (Tarjetas de Mes/Año con Cantidad de Facturas y Total Gastado) -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                                <i class="fa-solid fa-layer-group text-sm"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-bold text-white">Resumen de Compras por Mes y Año</h2>
+                                <p class="text-xs text-navy-400">Haz clic en cualquier mes para filtrar sus facturas o ver el consolidado</p>
+                            </div>
+                        </div>
+                        <button onclick="filtrarPorPeriodo('TODOS')" id="btn-ver-todos" class="px-3 py-1.5 rounded-lg bg-accent-indigo/20 hover:bg-accent-indigo/30 text-accent-blue border border-accent-indigo/30 text-xs font-semibold transition">
+                            Ver Todos los Meses
+                        </button>
+                    </div>
+
+                    <!-- Contenedor de tarjetas de meses -->
+                    <div id="contenedor-resumen-meses" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-44 overflow-y-auto pr-1">
+                        <!-- Se llena dinámicamente con cada Mes/Año, cantidad de facturas y total gastado -->
+                    </div>
+                </div>
+
+                <!-- Gráfico Comparativo de Precios -->
+                <div class="pt-4 border-t border-navy-700/80">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-navy-300">
+                            <i class="fa-solid fa-chart-column text-accent-cyan mr-1"></i> Comparativa de Costos Unitarios (Último vs Anterior)
+                        </span>
+                    </div>
+                    <div class="h-48 w-full relative">
+                        <canvas id="precioChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Análisis de Productos (Historial y Variación) -->
+        <div class="bg-navy-800/80 backdrop-blur rounded-2xl border border-navy-700 shadow-xl overflow-hidden">
+            <div class="p-6 border-b border-navy-700 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-magnifying-glass-dollar text-accent-cyan"></i> Matriz Histórica de Productos (Detección de Alzas y Bajas)
+                    </h2>
+                    <p class="text-xs text-navy-400">Compara automáticamente el precio neto pagado de cada producto a través de los meses para optimizar dónde comprar.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <select id="filtro-tendencia" onchange="filtrarProductos()" class="bg-navy-900 border border-navy-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-accent-indigo">
+                        <option value="TODOS">Todos los productos</option>
+                        <option value="ALZA">Solo productos al Alza 📈</option>
+                        <option value="BAJA">Solo productos a la Baja 📉</option>
+                        <option value="IGUAL">Sin variación / Nuevos</option>
+                    </select>
+                    <div class="relative flex-grow sm:w-56">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-navy-400 text-xs"></i>
+                        <input type="text" id="busqueda" onkeyup="filtrarProductos()" placeholder="Buscar producto o comercio..." class="w-full bg-navy-900 border border-navy-700 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-accent-indigo">
+                    </div>
+                    <!-- Botón directo para descargar reporte XLSX de la Matriz -->
+                    <button onclick="exportarMatrizExcel()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-navy-950 font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+                        <i class="fa-solid fa-file-excel text-sm"></i> Descargar Matriz (.xlsx)
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-navy-950/70 text-navy-400 uppercase text-[10px] tracking-wider border-b border-navy-700">
+                            <th class="py-3.5 px-6">Descripción del Producto (FEL)</th>
+                            <th class="py-3.5 px-4">Último Comercio / Mes</th>
+                            <th class="py-3.5 px-4">Cant.</th>
+                            <th class="py-3.5 px-4">P. Unitario / Neto (Q)</th>
+                            <th class="py-3.5 px-4">Precio Anterior (Q)</th>
+                            <th class="py-3.5 px-4">Variación</th>
+                            <th class="py-3.5 px-6 text-right">Diagnóstico de Compra</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-productos" class="divide-y divide-navy-700/50 text-sm">
+                        <!-- Se llena dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Historial de Facturas Cargadas -->
+        <div class="bg-navy-800/80 backdrop-blur rounded-2xl border border-navy-700 shadow-xl overflow-hidden mb-12">
+            <div class="p-6 border-b border-navy-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-folder-tree text-accent-indigo"></i> Desglose de Facturas FEL Cargadas
+                    </h2>
+                    <p id="subtitulo-tabla-facturas" class="text-xs text-navy-400">Mostrando todas las facturas registradas en el sistema</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-navy-950/70 text-navy-400 uppercase text-[10px] tracking-wider border-b border-navy-700">
+                            <th class="py-3.5 px-6">Período Asignado</th>
+                            <th class="py-3.5 px-4">Fecha Emisión FEL</th>
+                            <th class="py-3.5 px-4">Establecimiento</th>
+                            <th class="py-3.5 px-4">No. Autorización / DTE</th>
+                            <th class="py-3.5 px-4">Productos</th>
+                            <th class="py-3.5 px-4">Descuento (Q)</th>
+                            <th class="py-3.5 px-4">Total Factura (Q)</th>
+                            <th class="py-3.5 px-6 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-facturas" class="divide-y divide-navy-700/50 text-sm">
+                        <!-- Se llena dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para ver el detalle de ítems de una factura específica -->
+    <div id="modal-detalle" class="fixed inset-0 bg-navy-950/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-navy-800 border border-navy-600 rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-5 border-b border-navy-700 flex items-center justify-between bg-navy-900/60">
+                <div>
+                    <h3 id="modal-titulo" class="text-base font-bold text-white">Detalle de Factura</h3>
+                    <p id="modal-subtitulo" class="text-xs text-accent-blue mt-0.5"></p>
+                </div>
+                <button onclick="cerrarModal()" class="w-8 h-8 rounded-lg bg-navy-700 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-5 overflow-y-auto flex-grow">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-navy-900 text-navy-400 uppercase text-[10px] border-b border-navy-700">
+                            <th class="py-2.5 px-3">#</th>
+                            <th class="py-2.5 px-3">Cant.</th>
+                            <th class="py-2.5 px-3">Descripción</th>
+                            <th class="py-2.5 px-3 text-right">P. Unitario (Q)</th>
+                            <th class="py-2.5 px-3 text-right">Desc. (Q)</th>
+                            <th class="py-2.5 px-3 text-right">Total (Q)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-tbody" class="divide-y divide-navy-700/50"></tbody>
+                </table>
+            </div>
+            <div class="p-4 border-t border-navy-700 bg-navy-900/60 flex items-center justify-between text-xs">
+                <span id="modal-resumen-items" class="text-navy-400 font-medium"></span>
+                <span id="modal-total-factura" class="text-base font-black text-emerald-400"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-navy-950 border-t border-navy-800 py-6 text-center text-xs text-navy-400">
+        <p>Análisis FEL 360° — Control Mensual de Compras y Auditoría de Precios | Guatemala</p>
+    </footer>
+
+    <!-- Lógica Completa de Extracción FEL, Análisis Mensual y Exportación Excel -->
+    <script>
+        const NOMBRES_MESES = {
+            "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril",
+            "05": "Mayo", "06": "Junio", "07": "Julio", "08": "Agosto",
+            "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
+        };
+
+        let facturas = JSON.parse(localStorage.getItem('fel_facturas_historico_v2')) || [];
+        let filtroPeriodoActivo = 'TODOS';
+        let chartInstance = null;
+
+        function guardarStorage() {
+            localStorage.setItem('fel_facturas_historico_v2', JSON.stringify(facturas));
+        }
+
+        function obtenerPeriodoSeleccionado() {
+            const mes = document.getElementById('select-mes').value;
+            const anio = document.getElementById('select-anio').value;
+            return {
+                codigo: `${anio}-${mes}`,
+                etiqueta: `Compras para ${NOMBRES_MESES[mes]} ${anio}`,
+                corto: `${NOMBRES_MESES[mes]} ${anio}`
+            };
+        }
+
+        function actualizarVistaPorMes() {
+            const per = obtenerPeriodoSeleccionado();
+            document.getElementById('periodo-activo-badge').innerText = per.corto;
+            filtroPeriodoActivo = per.codigo;
+            initApp();
+        }
+
+        function filtrarPorPeriodo(codigoPeriodo) {
+            filtroPeriodoActivo = codigoPeriodo;
+            initApp();
+        }
+
+        function resetData() {
+            if (confirm('¿Deseas borrar todas las facturas cargadas y reiniciar el sistema desde cero?')) {
+                facturas = [];
+                guardarStorage();
+                initApp();
+            }
+        }
+
+        function eliminarFactura(id) {
+            if (confirm('¿Seguro que deseas eliminar esta factura del registro?')) {
+                facturas = facturas.filter(f => f.id !== id);
+                guardarStorage();
+                initApp();
+            }
+        }
+
+        // =========================================================================
+        // EXPORTACIÓN A EXCEL (.XLSX) CON SHEETJS
+        // =========================================================================
+        function exportarMatrizExcel() {
+            const productos = obtenerProductosFiltradosActuales();
+            if (productos.length === 0) {
+                alert('No hay datos en la matriz comparativa para exportar. Sube primero tus facturas PDF.');
+                return;
+            }
+
+            // 1. Preparar filas para la Hoja 1: Matriz Comparativa de Precios
+            const datosMatriz = productos.map((item, idx) => {
+                const diff = item.precioActual - item.precioAnterior;
+                const pct = item.precioAnterior > 0 ? (diff / item.precioAnterior) * 100 : 0;
+
+                let estatus = "Precio Base (1ra compra)";
+                let recomendacion = "Registrado para comparar el próximo mes";
+
+                if (item.historialPrecios.length > 1) {
+                    if (pct > 0.1) {
+                        estatus = "ALZA";
+                        recomendacion = "Subió de precio - Cotizar en otro establecimiento";
+                    } else if (pct < -0.1) {
+                        estatus = "BAJA";
+                        recomendacion = "Bajó de precio - Excelente ahorro";
+                    } else {
+                        estatus = "SIN CAMBIOS";
+                        recomendacion = "Precio estable - Mantener establecimiento";
+                    }
+                }
+
+                return {
+                    "No.": idx + 1,
+                    "Descripción del Producto (FEL)": item.nombre,
+                    "Último Establecimiento": item.comercioActual,
+                    "Período Última Compra": item.periodoActual,
+                    "Última Cantidad": item.cantUltima,
+                    "Precio Unitario / Neto Actual (Q)": Number(item.precioActual.toFixed(2)),
+                    "Precio Anterior (Q)": Number(item.precioAnterior.toFixed(2)),
+                    "Diferencia (Q)": Number(diff.toFixed(2)),
+                    "Variación (%)": Number(pct.toFixed(2)),
+                    "Tendencia": estatus,
+                    "Diagnóstico / Acción Recomendada": recomendacion,
+                    "Compras Registradas": item.historialPrecios.length
+                };
+            });
+
+            // 2. Preparar filas para la Hoja 2: Resumen Mensual de Presupuesto y Facturas
+            const resumenMeses = obtenerResumenPorMeses();
+            const datosMeses = resumenMeses.map(m => ({
+                "Período de Compra": m.etiqueta,
+                "Mes / Año": m.corto,
+                "Cantidad de Facturas Cargadas": m.cantidadFacturas,
+                "Total Gastado en el Mes (Q)": Number(m.totalGastado.toFixed(2))
+            }));
+
+            // 3. Preparar filas para la Hoja 3: Desglose de Facturas FEL
+            const datosFacturas = facturas.map(f => ({
+                "Período Asignado": f.periodoCorto,
+                "Fecha Emisión FEL": f.fechaEmision,
+                "Establecimiento": f.comercio,
+                "No. Autorización / DTE": f.id,
+                "Cantidad de Ítems": f.productos.length,
+                "Descuento Total (Q)": Number((f.descuentoTotal || 0).toFixed(2)),
+                "Total Factura (Q)": Number(f.total.toFixed(2))
+            }));
+
+            // Crear libro de Excel
+            const wb = XLSX.utils.book_new();
+
+            // Hoja 1: Matriz Comparativa
+            const wsMatriz = XLSX.utils.json_to_sheet(datosMatriz);
+            wsMatriz['!cols'] = [
+                { wch: 6 },  // No.
+                { wch: 32 }, // Descripción
+                { wch: 28 }, // Establecimiento
+                { wch: 18 }, // Período
+                { wch: 14 }, // Cantidad
+                { wch: 26 }, // Precio Actual
+                { wch: 20 }, // Precio Anterior
+                { wch: 15 }, // Diferencia
+                { wch: 15 }, // Variación %
+                { wch: 18 }, // Tendencia
+                { wch: 44 }, // Diagnóstico
+                { wch: 18 }  // Compras Registradas
+            ];
+            XLSX.utils.book_append_sheet(wb, wsMatriz, "Matriz Comparativa");
+
+            // Hoja 2: Resumen por Mes
+            if (datosMeses.length > 0) {
+                const wsMeses = XLSX.utils.json_to_sheet(datosMeses);
+                wsMeses['!cols'] = [
+                    { wch: 30 },
+                    { wch: 18 },
+                    { wch: 28 },
+                    { wch: 26 }
+                ];
+                XLSX.utils.book_append_sheet(wb, wsMeses, "Resumen Mensual");
+            }
+
+            // Hoja 3: Facturas Cargadas
+            if (datosFacturas.length > 0) {
+                const wsFacturas = XLSX.utils.json_to_sheet(datosFacturas);
+                wsFacturas['!cols'] = [
+                    { wch: 18 },
+                    { wch: 18 },
+                    { wch: 28 },
+                    { wch: 38 },
+                    { wch: 16 },
+                    { wch: 20 },
+                    { wch: 20 }
+                ];
+                XLSX.utils.book_append_sheet(wb, wsFacturas, "Facturas FEL");
+            }
+
+            const fechaHoy = new Date().toISOString().slice(0, 10);
+            XLSX.writeFile(wb, `Reporte_Matriz_Comparativa_FEL_${fechaHoy}.xlsx`);
+        }
+
+        // =========================================================================
+        // PARSER INTELIGENTE CALIBRADO PARA EL ESTÁNDAR FEL DE GUATEMALA (PDF.js)
+        // =========================================================================
+        async function procesarMultiplesPDFs(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            const periodoAsignado = obtenerPeriodoSeleccionado();
+            const loadingEl = document.getElementById('loading-indicator');
+            loadingEl.classList.remove('hidden');
+
+            let cargadasExito = 0;
+            let omitidasDuplicadas = 0;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    
+                    let lineasDocumento = [];
+                    let textoPlano = '';
+
+                    for (let p = 1; p <= pdf.numPages; p++) {
+                        const page = await pdf.getPage(p);
+                        const textContent = await page.getTextContent();
+                        
+                        let filasMap = {};
+                        textContent.items.forEach(item => {
+                            const str = item.str.trim();
+                            if (!str) return;
+                            const y = Math.round(item.transform[5] / 4) * 4;
+                            if (!filasMap[y]) filasMap[y] = [];
+                            filasMap[y].push({ x: item.transform[4], text: str });
+                        });
+
+                        const yKeys = Object.keys(filasMap).map(Number).sort((a, b) => b - a);
+                        yKeys.forEach(y => {
+                            const filaOrdenada = filasMap[y].sort((a, b) => a.x - b.x).map(i => i.text).join(' ');
+                            lineasDocumento.push(filaOrdenada);
+                            textoPlano += filaOrdenada + '\n';
+                        });
+                    }
+
+                    const facturaExtraida = analizarEstructuraFEL(textoPlano, lineasDocumento, file.name, periodoAsignado);
+
+                    if (!facturas.some(f => f.id === facturaExtraida.id)) {
+                        facturas.push(facturaExtraida);
+                        cargadasExito++;
+                    } else {
+                        omitidasDuplicadas++;
+                    }
+
+                } catch (err) {
+                    console.error("Error procesando PDF:", file.name, err);
+                }
+            }
+
+            facturas.sort((a, b) => a.periodoCodigo.localeCompare(b.periodoCodigo));
+            guardarStorage();
+            
+            filtroPeriodoActivo = periodoAsignado.codigo;
+            initApp();
+
+            loadingEl.classList.add('hidden');
+            event.target.value = '';
+
+            let msg = `¡Proceso finalizado para ${periodoAsignado.etiqueta}!\n- Facturas nuevas analizadas: ${cargadasExito}`;
+            if (omitidasDuplicadas > 0) msg += `\n- Facturas omitidas (ya estaban cargadas): ${omitidasDuplicadas}`;
+            alert(msg);
+        }
+
+        function analizarEstructuraFEL(textoCompleto, lineas, fileName, periodoObj) {
+            const upper = textoCompleto.toUpperCase();
+
+            // 1. Detectar Establecimiento / Comercio Emisor
+            let comercio = "ESTABLECIMIENTO FEL";
+            if (upper.includes("SUPERMERCADOS LA TORRE") || upper.includes("UNISUPER")) {
+                comercio = "SUPERMERCADOS LA TORRE";
+            } else if (upper.includes("PRICESMART")) {
+                comercio = "PRICESMART";
+            } else if (upper.includes("WALMART") || upper.includes("OPERADORA DE TIENDAS")) {
+                comercio = "WALMART / PAIZ";
+            } else if (upper.includes("PAIZ")) {
+                comercio = "SUPERMERCADOS PAIZ";
+            } else if (upper.includes("MAXI DESPENSA")) {
+                comercio = "MAXI DESPENSA";
+            } else {
+                const lineaSA = lineas.find(l => l.toUpperCase().includes("SOCIEDAD ANONIMA") || l.toUpperCase().includes("S.A."));
+                if (lineaSA) comercio = lineaSA.substring(0, 35).toUpperCase();
+            }
+
+            // 2. Detectar UUID de Autorización o Número de DTE
+            let idDTE = fileName.replace(/\.pdf$/i, '');
+            const matchUUID = textoCompleto.match(/([A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12})/i);
+            if (matchUUID) {
+                idDTE = matchUUID[1].toUpperCase();
+            } else {
+                const matchDTE = textoCompleto.match(/DTE:\s*(\d+)/i);
+                if (matchDTE) idDTE = "DTE-" + matchDTE[1];
+            }
+
+            // 3. Detectar Fecha de Emisión real del documento
+            let fechaEmision = "25-oct-2026";
+            const matchFecha = textoCompleto.match(/(\d{2}-[a-zA-Z]{3}-\d{4})/);
+            if (matchFecha) {
+                fechaEmision = matchFecha[1];
+            } else {
+                const matchFechaNum = textoCompleto.match(/(\d{2}\/\d{2}\/\d{4}|\d{4}-\d{2}-\d{2})/);
+                if (matchFechaNum) fechaEmision = matchFechaNum[1];
+            }
+
+            // 4. Extraer todos los productos de la tabla FEL
+            let productos = [];
+
+            lineas.forEach(linea => {
+                let limpia = linea.replace(/(\d),(\d{3}\.\d{2})/g, '$1$2').replace(/(\d+),(\d{2})\b/g, '$1.$2');
+
+                if (/\b(Bien|Servicio)\b/i.test(limpia) && !/TOTALES/i.test(limpia)) {
+                    const regexPrecios = /(\d+\.\d{2})\s+(\d+\.\d{2})\s+(\d+\.\d{2})/g;
+                    let matches = [...limpia.matchAll(regexPrecios)];
+
+                    if (matches.length > 0) {
+                        const ultimoMatch = matches[matches.length - 1];
+                        const pUnitario = parseFloat(ultimoMatch[1]);
+                        const descuento = parseFloat(ultimoMatch[2]);
+                        const totalItem = parseFloat(ultimoMatch[3]);
+
+                        const parteIzquierda = limpia.substring(0, ultimoMatch.index).trim();
+                        let resto = parteIzquierda.replace(/^\d+\s*\|\s*|\b^\d+\s+/i, '').replace(/^(Bien|Servicio)\s*\|\s*|\b^(Bien|Servicio)\s+/i, '').trim();
+
+                        let cantidad = 1;
+                        let descripcion = resto;
+
+                        const matchCantInicio = resto.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
+                        const matchCantFin = resto.match(/^(.+?)\s+(\d+(?:\.\d+)?)$/);
+
+                        if (matchCantInicio && isNaN(Number(matchCantInicio[2]))) {
+                            cantidad = parseFloat(matchCantInicio[1]);
+                            descripcion = matchCantInicio[2].trim();
+                        } else if (matchCantFin) {
+                            descripcion = matchCantFin[1].trim();
+                            cantidad = parseFloat(matchCantFin[2]);
+                        }
+
+                        descripcion = descripcion.replace(/\|/g, '').trim().toUpperCase();
+
+                        if (descripcion.length >= 2 && totalItem > 0) {
+                            const precioEfectivoUnitario = cantidad > 0 ? +(totalItem / cantidad).toFixed(2) : pUnitario;
+                            productos.push({
+                                nombre: descripcion,
+                                cant: cantidad,
+                                pUnitario: pUnitario,
+                                descuento: descuento,
+                                total: totalItem,
+                                precioNetoUnitario: precioEfectivoUnitario
+                            });
+                        }
+                    }
+                }
+            });
+
+            if (productos.length === 0) {
+                productos = extraerMultilineaFEL(textoCompleto);
+            }
+
+            // 5. Detectar el Total General de la Factura
+            let totalFactura = 0;
+            let descuentoTotal = 0;
+
+            const textoSinComasMiles = textoCompleto.replace(/(\d),(\d{3}\.\d{2})/g, '$1$2').replace(/(\d+),(\d{2})\b/g, '$1.$2');
+            const matchTotales = textoSinComasMiles.match(/TOTALES:\s*(\d+\.\d{2})\s+(\d+\.\d{2})/i);
+            
+            if (matchTotales) {
+                descuentoTotal = parseFloat(matchTotales[1]);
+                totalFactura = parseFloat(matchTotales[2]);
+            } else {
+                totalFactura = productos.reduce((acc, p) => acc + p.total, 0);
+                descuentoTotal = productos.reduce((acc, p) => acc + p.descuento, 0);
+            }
+
+            return {
+                id: idDTE,
+                periodoCodigo: periodoObj.codigo,
+                periodoEtiqueta: periodoObj.etiqueta,
+                periodoCorto: periodoObj.corto,
+                fechaEmision: fechaEmision,
+                comercio: comercio,
+                descuentoTotal: +descuentoTotal.toFixed(2),
+                total: +totalFactura.toFixed(2),
+                productos: productos
+            };
+        }
+
+        function extraerMultilineaFEL(texto) {
+            let items = [];
+            const limpio = texto.replace(/(\d),(\d{3}\.\d{2})/g, '$1$2').replace(/(\d+),(\d{2})\b/g, '$1.$2');
+            const bloques = limpio.split(/\b(?:Bien|Servicio)\b/i);
+
+            for (let i = 1; i < bloques.length; i++) {
+                let bloque = bloques[i];
+                if (bloque.toUpperCase().includes("TOTALES:")) {
+                    bloque = bloque.split(/TOTALES:/i)[0];
+                }
+
+                const montos = [...bloque.matchAll(/\b(\d+\.\d{2})\b/g)].map(m => parseFloat(m[1]));
+                if (montos.length >= 3) {
+                    const pUnit = montos[0];
+                    const desc = montos[1];
+                    const tot = montos[2];
+
+                    let textoAntes = bloque.split(montos[0].toFixed(2))[0] || '';
+                    let cantMatch = textoAntes.match(/\b(\d+(?:\.\d+)?)\b/);
+                    let cant = cantMatch ? parseFloat(cantMatch[1]) : 1;
+                    
+                    let nombreProd = textoAntes.replace(/\b\d+(?:\.\d+)?\b/g, '').replace(/[|\n\r]+/g, ' ').trim().toUpperCase();
+                    if (nombreProd.length >= 2 && tot > 0) {
+                        items.push({
+                            nombre: nombreProd,
+                            cant: cant,
+                            pUnitario: pUnit,
+                            descuento: desc,
+                            total: tot,
+                            precioNetoUnitario: cant > 0 ? +(tot / cant).toFixed(2) : pUnit
+                        });
+                    }
+                }
+            }
+            return items;
+        }
+
+        // =========================================================================
+        // MOTOR DE CONSOLIDACIÓN MENSUAL Y COMPARATIVA DE PRECIOS
+        // =========================================================================
+        function obtenerResumenPorMeses() {
+            let mapaMeses = {};
+            facturas.forEach(f => {
+                if (!mapaMeses[f.periodoCodigo]) {
+                    mapaMeses[f.periodoCodigo] = {
+                        codigo: f.periodoCodigo,
+                        etiqueta: f.periodoEtiqueta,
+                        corto: f.periodoCorto,
+                        cantidadFacturas: 0,
+                        totalGastado: 0
+                    };
+                }
+                mapaMeses[f.periodoCodigo].cantidadFacturas++;
+                mapaMeses[f.periodoCodigo].totalGastado += f.total;
+            });
+            return Object.values(mapaMeses).sort((a, b) => b.codigo.localeCompare(a.codigo));
+        }
+
+        function procesarConsolidadoProductos() {
+            let mapaProductos = {};
+            const facturasOrdenadas = [...facturas].sort((a, b) => a.periodoCodigo.localeCompare(b.periodoCodigo));
+
+            facturasOrdenadas.forEach(f => {
+                f.productos.forEach(p => {
+                    const clave = p.nombre.trim().toUpperCase();
+                    const precioEvaluar = p.precioNetoUnitario || p.pUnitario;
+
+                    if (!mapaProductos[clave]) {
+                        mapaProductos[clave] = {
+                            nombre: clave,
+                            comercioActual: f.comercio,
+                            periodoActual: f.periodoCorto,
+                            cantUltima: p.cant,
+                            precioAnterior: precioEvaluar,
+                            precioActual: precioEvaluar,
+                            historialPrecios: [{ periodo: f.periodoCorto, comercio: f.comercio, precio: precioEvaluar }]
+                        };
+                    } else {
+                        mapaProductos[clave].precioAnterior = mapaProductos[clave].precioActual;
+                        mapaProductos[clave].precioActual = precioEvaluar;
+                        mapaProductos[clave].comercioActual = f.comercio;
+                        mapaProductos[clave].periodoActual = f.periodoCorto;
+                        mapaProductos[clave].cantUltima = p.cant;
+                        mapaProductos[clave].historialPrecios.push({
+                            periodo: f.periodoCorto,
+                            comercio: f.comercio,
+                            precio: precioEvaluar
+                        });
+                    }
+                });
+            });
+
+            return Object.values(mapaProductos);
+        }
+
+        function initApp() {
+            const resumenMeses = obtenerResumenPorMeses();
+            const periodoSelect = obtenerPeriodoSeleccionado();
+
+            const facturasFiltradas = filtroPeriodoActivo === 'TODOS'
+                ? facturas
+                : facturas.filter(f => f.periodoCodigo === filtroPeriodoActivo);
+
+            const gastoTotalHistorico = facturas.reduce((acc, f) => acc + f.total, 0);
+            const gastoMostrado = facturasFiltradas.reduce((acc, f) => acc + f.total, 0);
+
+            document.getElementById('label-kpi-mes').innerText = filtroPeriodoActivo === 'TODOS'
+                ? 'Total Gastado (Todos los Meses)'
+                : `Total en ${periodoSelect.corto}`;
+            
+            document.getElementById('kpi-gasto-mes').innerText = `Q ${gastoMostrado.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            document.getElementById('kpi-facturas-mes').innerText = facturasFiltradas.length;
+            document.getElementById('kpi-acumulado-total').innerText = `Histórico: Q ${gastoTotalHistorico.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            const productosConsolidados = procesarConsolidadoProductos();
+            document.getElementById('kpi-total-productos').innerText = productosConsolidados.length;
+
+            let alzas = 0;
+            let bajas = 0;
+
+            productosConsolidados.forEach(item => {
+                const diff = item.precioActual - item.precioAnterior;
+                const pct = item.precioAnterior > 0 ? (diff / item.precioAnterior) * 100 : 0;
+                if (pct > 0.1) alzas++;
+                else if (pct < -0.1) bajas++;
+            });
+
+            document.getElementById('kpi-total-alza').innerText = alzas;
+            document.getElementById('kpi-total-baja').innerText = bajas;
+
+            renderTarjetasMeses(resumenMeses);
+            filtrarProductos();
+            renderTablaFacturas(facturasFiltradas);
+            renderGrafico(productosConsolidados);
+        }
+
+        function renderTarjetasMeses(resumenMeses) {
+            const container = document.getElementById('contenedor-resumen-meses');
+            container.innerHTML = '';
+
+            if (resumenMeses.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-3 py-6 text-center bg-navy-900/50 rounded-xl border border-navy-700/60 text-xs text-navy-400">
+                        Aún no has subido facturas. Elige <b>Compras para Noviembre 2026</b> y sube tus 2 archivos PDF.
+                    </div>`;
+                return;
+            }
+
+            resumenMeses.forEach(m => {
+                const activo = filtroPeriodoActivo === m.codigo;
+                const card = document.createElement('div');
+                card.onclick = () => {
+                    const [anio, mes] = m.codigo.split('-');
+                    document.getElementById('select-anio').value = anio;
+                    document.getElementById('select-mes').value = mes;
+                    filtrarPorPeriodo(m.codigo);
+                };
+                card.className = `cursor-pointer p-3.5 rounded-xl border transition flex flex-col justify-between ${
+                    activo 
+                    ? 'bg-accent-indigo/20 border-accent-blue shadow-lg shadow-accent-indigo/10' 
+                    : 'bg-navy-900/70 border-navy-700 hover:border-navy-500'
+                }`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-white">${m.corto}</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-navy-800 text-accent-cyan border border-navy-600 font-semibold">
+                            ${m.cantidadFacturas} ${m.cantidadFacturas === 1 ? 'factura' : 'facturas'}
+                        </span>
+                    </div>
+                    <div class="mt-2">
+                        <p class="text-[10px] text-navy-400 uppercase">Total Gastado en el Mes</p>
+                        <p class="text-base font-black text-emerald-400">Q ${m.totalGastado.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function obtenerProductosFiltradosActuales() {
+            const query = document.getElementById('busqueda').value.toLowerCase();
+            const tendencia = document.getElementById('filtro-tendencia').value;
+            const productos = procesarConsolidadoProductos();
+
+            return productos.filter(p => {
+                const coincideTexto = p.nombre.toLowerCase().includes(query) || p.comercioActual.toLowerCase().includes(query);
+                const diff = p.precioActual - p.precioAnterior;
+                const pct = p.precioAnterior > 0 ? (diff / p.precioAnterior) * 100 : 0;
+
+                if (tendencia === 'ALZA') return coincideTexto && pct > 0.1;
+                if (tendencia === 'BAJA') return coincideTexto && pct < -0.1;
+                if (tendencia === 'IGUAL') return coincideTexto && Math.abs(pct) <= 0.1;
+                return coincideTexto;
+            });
+        }
+
+        function filtrarProductos() {
+            const filtrados = obtenerProductosFiltradosActuales();
+            renderTablaProductos(filtrados);
+        }
+
+        function renderTablaProductos(productos) {
+            const tbody = document.getElementById('tabla-productos');
+            tbody.innerHTML = '';
+
+            if (productos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-navy-400 text-xs">No hay productos que coincidan o aún no se han cargado facturas PDF.</td></tr>`;
+                return;
+            }
+
+            productos.forEach(item => {
+                const diff = item.precioActual - item.precioAnterior;
+                const pct = item.precioAnterior > 0 ? (diff / item.precioAnterior) * 100 : 0;
+
+                let badgeClass = "bg-slate-700/40 text-slate-300 border-slate-600";
+                let badgeText = "Precio Base (1ra vez)";
+                let icono = "fa-minus";
+                let diagnostico = `<span class="text-slate-400">Registrado para próximo mes</span>`;
+
+                if (item.historialPrecios.length > 1) {
+                    if (pct > 0.1) {
+                        badgeClass = "bg-rose-500/15 text-rose-400 border-rose-500/30";
+                        badgeText = `+Q${diff.toFixed(2)} (+${pct.toFixed(1)}%)`;
+                        icono = "fa-arrow-trend-up";
+                        diagnostico = `<span class="text-rose-400 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Subió — Buscar otro comercio</span>`;
+                    } else if (pct < -0.1) {
+                        badgeClass = "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+                        badgeText = `-Q${Math.abs(diff).toFixed(2)} (${pct.toFixed(1)}%)`;
+                        icono = "fa-arrow-trend-down";
+                        diagnostico = `<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>Bajó — Excelente precio</span>`;
+                    } else {
+                        badgeText = "0.0% (Mismo precio)";
+                        diagnostico = `<span class="text-accent-blue">Precio estable</span>`;
+                    }
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-navy-700/30 transition";
+                tr.innerHTML = `
+                    <td class="py-3 px-6 font-semibold text-white text-xs">${item.nombre}</td>
+                    <td class="py-3 px-4 text-xs">
+                        <span class="text-slate-200 font-medium block">${item.comercioActual}</span>
+                        <span class="text-[10px] text-navy-400">${item.periodoActual}</span>
+                    </td>
+                    <td class="py-3 px-4 text-xs text-slate-300">${item.cantUltima}</td>
+                    <td class="py-3 px-4 text-xs font-bold text-white">Q ${item.precioActual.toFixed(2)}</td>
+                    <td class="py-3 px-4 text-xs text-navy-400">Q ${item.precioAnterior.toFixed(2)}</td>
+                    <td class="py-3 px-4 text-xs font-semibold">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${badgeClass}">
+                            <i class="fa-solid ${icono}"></i> ${badgeText}
+                        </span>
+                    </td>
+                    <td class="py-3 px-6 text-right text-xs">${diagnostico}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderTablaFacturas(listaFacturas) {
+            const tbody = document.getElementById('tabla-facturas');
+            tbody.innerHTML = '';
+
+            const subtitulo = document.getElementById('subtitulo-tabla-facturas');
+            subtitulo.innerText = filtroPeriodoActivo === 'TODOS'
+                ? `Mostrando todas las facturas cargadas (${listaFacturas.length})`
+                : `Mostrando ${listaFacturas.length} factura(s) del período seleccionado`;
+
+            if (listaFacturas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-navy-400 text-xs">No hay facturas cargadas en este período. Sube tus archivos PDF arriba.</td></tr>`;
+                return;
+            }
+
+            listaFacturas.forEach(f => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-navy-700/30 transition";
+                tr.innerHTML = `
+                    <td class="py-3.5 px-6 text-xs">
+                        <span class="px-2.5 py-1 rounded-lg bg-accent-indigo/15 text-accent-blue border border-accent-indigo/30 font-semibold">
+                            ${f.periodoCorto}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-4 text-xs text-slate-300">${f.fechaEmision}</td>
+                    <td class="py-3.5 px-4 text-xs font-bold text-white">${f.comercio}</td>
+                    <td class="py-3.5 px-4 text-xs text-navy-300 font-mono">${f.id.substring(0, 18)}...</td>
+                    <td class="py-3.5 px-4 text-xs text-accent-cyan font-semibold">${f.productos.length} productos</td>
+                    <td class="py-3.5 px-4 text-xs text-amber-400">Q ${(f.descuentoTotal || 0).toFixed(2)}</td>
+                    <td class="py-3.5 px-4 text-sm font-black text-emerald-400">Q ${f.total.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td class="py-3.5 px-6 text-right space-x-1">
+                        <button onclick="verDetalleFactura('${f.id}')" class="px-2.5 py-1.5 rounded-lg bg-accent-blue/10 hover:bg-accent-blue/20 text-accent-blue text-xs font-medium transition" title="Ver productos de esta factura">
+                            <i class="fa-solid fa-eye mr-1"></i> Detalle
+                        </button>
+                        <button onclick="eliminarFactura('${f.id}')" class="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs transition" title="Eliminar factura">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function verDetalleFactura(id) {
+            const factura = facturas.find(f => f.id === id);
+            if (!factura) return;
+
+            document.getElementById('modal-titulo').innerText = `${factura.comercio} — ${factura.periodoEtiqueta}`;
+            document.getElementById('modal-subtitulo').innerText = `Autorización / DTE: ${factura.id} | Fecha Emisión: ${factura.fechaEmision}`;
+
+            const tbody = document.getElementById('modal-tbody');
+            tbody.innerHTML = '';
+
+            factura.productos.forEach((p, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2 px-3 text-navy-400">${idx + 1}</td>
+                    <td class="py-2 px-3 text-slate-300">${p.cant}</td>
+                    <td class="py-2 px-3 font-semibold text-white">${p.nombre}</td>
+                    <td class="py-2 px-3 text-right text-slate-300">Q ${(p.pUnitario || p.precioNetoUnitario).toFixed(2)}</td>
+                    <td class="py-2 px-3 text-right text-amber-400">Q ${(p.descuento || 0).toFixed(2)}</td>
+                    <td class="py-2 px-3 text-right font-bold text-emerald-400">Q ${(p.total || p.precioNetoUnitario).toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('modal-resumen-items').innerText = `Total de líneas extraídas: ${factura.productos.length} ítems | Descuento Total: Q ${(factura.descuentoTotal || 0).toFixed(2)}`;
+            document.getElementById('modal-total-factura').innerText = `TOTAL FACTURA: Q ${factura.total.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            const modal = document.getElementById('modal-detalle');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function cerrarModal() {
+            const modal = document.getElementById('modal-detalle');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function renderGrafico(productos) {
+            const ctx = document.getElementById('precioChart').getContext('2d');
+            
+            const topProductos = productos.slice(0, 8);
+            const labels = topProductos.map(p => p.nombre.length > 16 ? p.nombre.substring(0, 16) + '...' : p.nombre);
+            const preciosAnteriores = topProductos.map(p => p.precioAnterior);
+            const preciosActuales = topProductos.map(p => p.precioActual);
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels.length > 0 ? labels : ['Sube tus PDFs para graficar'],
+                    datasets: [
+                        {
+                            label: 'Precio Anterior (Q)',
+                            data: preciosAnteriores.length > 0 ? preciosAnteriores : [0],
+                            backgroundColor: 'rgba(58, 80, 107, 0.7)',
+                            borderColor: '#3A506B',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Último Precio FEL (Q)',
+                            data: preciosActuales.length > 0 ? preciosActuales : [0],
+                            backgroundColor: 'rgba(76, 201, 240, 0.85)',
+                            borderColor: '#4CC9F0',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#94A3B8', font: { size: 11 } }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#94A3B8', font: { size: 10 } },
+                            grid: { color: 'rgba(58, 80, 107, 0.2)' }
+                        },
+                        y: {
+                            ticks: { color: '#94A3B8', font: { size: 10 } },
+                            grid: { color: 'rgba(58, 80, 107, 0.2)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        window.onload = () => {
+            initApp();
+        };
+    </script>
+</body>
+</html>
